@@ -51,14 +51,7 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
         mode='markers',
         name='30d predicted price',
         text=['30d predicted price']
-    )
-    rf_predicted_prices_trace = go.Scatter(
-        x=y_test.index,
-        y=rf_y_pred,
-        mode='lines+markers',
-        name='Random Forest Predicted prices',
-        marker=dict(size=6),
-        line=dict(width=1)
+ 
 )
     # Create a DataFrame for the random forest predicted prices
     rf_predicted_prices_df = pd.DataFrame({'Date': y_test.index, 'Price': rf_y_pred})
@@ -99,11 +92,17 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
         mode='markers',
         name='RF 30d predicted price',
         text=['RF 30d predicted price']
+
         )
+    # Create a DataFrame for the random forest predicted prices
+    nn_predicted_prices_df = pd.DataFrame({'Date': y_test.index, 'Price': nn_y_pred})
+    nn_predicted_prices_df.set_index('Date', inplace=True)
+    # Interpolate the random forest predicted prices
+    nn_predicted_prices_interpolated = nn_predicted_prices_df.reindex(stock_data.index).interpolate(method='time')
     nn_predicted_prices_trace = go.Scatter(
-        x=nn_y_test.index,
-        y=nn_y_pred,
-        mode='markers',
+        x=nn_predicted_prices_interpolated.index,
+        y=nn_predicted_prices_interpolated['Price'],
+        mode='lines+markers',
         name='Neural Network Predicted prices'
     )
 
