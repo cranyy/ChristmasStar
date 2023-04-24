@@ -498,6 +498,7 @@ if __name__ == '__main__':
             predictions_df = pd.DataFrame({'Symbol': [symbol],
                                             'LR_MSE': [lr_mse],
                                             'RF_MSE': [rf_mse],
+                                            'NN_MSE': [nn_mse],
                                             'rf_r2': [rf_r2],
                                             'LR_r2': [lr_r2],
                                             'Today': [today_date_date],
@@ -506,12 +507,12 @@ if __name__ == '__main__':
                                             'Tomorrow_Close_Price_Prediction': [lr_future_prices[-2] if best_model == 'LR' else rf_future_prices[-2]],
                                             '7d_Close_Price_Prediction': [lr_future_prices[-7] if best_model == 'LR' else rf_future_prices[-7]],
                                             '1m_Close_Price_Prediction': [lr_future_prices[-30] if best_model == 'LR' else rf_future_prices[-30]],
-                                            '1d_Action_3p': [action_3p],
-                                            '1d_Action_5p': [action_5p],
-                                            '1d_Action_10p': [action_10p],
                                             'Tomorrow_Close_Price_Prediction_RF': [rf_future_prices[-1]],
                                             '7d_Close_Price_Prediction_RF': [rf_future_prices[-7]],
                                             '1m_Close_Price_Prediction_RF': [rf_future_prices[-30]],
+                                            'Tomorrow_Close_Price_Prediction_NN': [nn_future_prices[-1]],
+                                            '7d_Close_Price_Prediction_NN': [nn_future_prices[-7]],
+                                            '1m_Close_Price_Prediction_NN': [nn_future_prices[-30]],
 
                                             
                                             '1d_Action': [action_1d]})
