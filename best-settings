@@ -128,7 +128,7 @@ def neural_network_model(stock_data, retrain=False):
     model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
     # Train the model
-    model.fit(X_train, y_train, epochs=150, batch_size=32, verbose=2)
+    model.fit(X_train, y_train, epochs=500, batch_size=32, verbose=2)
 
     # Evaluate the model
     y_pred = model.predict(X_test).flatten()
@@ -138,10 +138,17 @@ def neural_network_model(stock_data, retrain=False):
     last_30_days = stock_data[X.columns].tail(30)
     last_30_days_scaled = scaler.transform(last_30_days)
     future_prices = model.predict(last_30_days_scaled).flatten()
+    last_180_days = stock_data[X.columns].tail(180)
+    last_180_days_scaled = scaler.transform(last_180_days)
+    future_prices_6m = model.predict(last_180_days_scaled).flatten()
+
+    last_365_days = stock_data[X.columns].tail(365)
+    last_365_days_scaled = scaler.transform(last_365_days)
+    future_prices_1y = model.predict(last_365_days_scaled).flatten()
 
     model.save(model_file)
 
-    return mse, r2, future_prices, y_test, y_pred
+    return mse, r2, future_prices, y_test, y_pred, future_prices_6m, future_prices_1y
 
 def random_forest_model(stock_data, retrain=False):
     model_file = 'random_forest_model.pkl'
@@ -175,10 +182,17 @@ def random_forest_model(stock_data, retrain=False):
     last_30_days = stock_data[X.columns].tail(30)
     last_30_days_scaled = scaler.transform(last_30_days)
     future_prices = best_model.predict(last_30_days_scaled)
+    last_180_days = stock_data[X.columns].tail(180)
+    last_180_days_scaled = scaler.transform(last_180_days)
+    future_prices_6m = best_model.predict(last_180_days_scaled)
+
+    last_365_days = stock_data[X.columns].tail(365)
+    last_365_days_scaled = scaler.transform(last_365_days)
+    future_prices_1y = best_model.predict(last_365_days_scaled)
 
     joblib.dump(best_model, model_file)
 
-    return mse, r2, future_prices, y_test, y_pred
+    return mse, r2, future_prices, y_test, y_pred, future_prices_6m, future_prices_1y
 
 
 def linear_regression_model(stock_data, retrain=False):
@@ -198,6 +212,7 @@ def linear_regression_model(stock_data, retrain=False):
     X_test = scaler.transform(X_test)
     
     model = Lasso(max_iter=10000)  # Increase the number of iterations
+    model.fit(X_train, y_train)
     lasso_params = {'model__alpha': [0.001, 0.01, 0.1, 1, 10]}
     pipeline = Pipeline([('model', model)])
     grid_search = GridSearchCV(estimator=pipeline, param_grid=lasso_params, scoring='neg_mean_squared_error', cv=custom_cv_splits(5))
@@ -208,9 +223,20 @@ def linear_regression_model(stock_data, retrain=False):
     r2 = r2_score(y_test, y_pred)
     last_30_days = stock_data[X.columns].tail(30)
     last_30_days_scaled = scaler.transform(last_30_days)
-    future_prices = best_model.predict(last_30_days_scaled)
+    future_prices = model.predict(last_30_days_scaled).flatten()
+
+    last_180_days = stock_data[X.columns].tail(180)
+    last_180_days_scaled = scaler.transform(last_180_days)
+    future_prices_6m = model.predict(last_180_days_scaled).flatten()
+
+    last_365_days = stock_data[X.columns].tail(365)
+    last_365_days_scaled = scaler.transform(last_365_days)
+    future_prices_1y = model.predict(last_365_days_scaled).flatten()
+
     joblib.dump(best_model, model_file)
-    return mse, r2, future_prices, y_test, y_pred
+
+    return mse, r2, future_prices, y_test, y_pred, future_prices_6m, future_prices_1y
+    
 
 
     
@@ -296,41 +322,38 @@ if __name__ == '__main__':
             print(f"{symbol}: Added features to stock data")
 
             # Train and evaluate the neural network model
-            nn_mse, nn_r2, nn_future_prices, nn_y_test, nn_y_pred = neural_network_model(stock_data)
+            nn_mse, nn_r2, nn_future_prices, nn_y_test, nn_y_pred, nn_future_prices_6m, nn_future_prices_1y = neural_network_model(stock_data)
             print(f"{symbol}: Trained and evaluated neural network model")
             print(f"{symbol}: Neural Network MSE: {nn_mse}")
 
             # Train and evaluate the random forest model
-            rf_mse, rf_r2, rf_future_prices, rf_y_test, rf_y_pred = random_forest_model(stock_data)
+            rf_mse, rf_r2, rf_future_prices, rf_y_test, rf_y_pred, rf_future_prices_6m, rf_future_prices_1y = random_forest_model(stock_data)
             print(f"{symbol}: Trained and evaluated random forest model")
             print(f"{symbol}: Random Forest MSE: {rf_mse}")
             print()
 
             # Train and evaluate the linear regression model
-            lr_mse, lr_r2, lr_future_prices, y_test, y_pred = linear_regression_model(stock_data)
+            lr_mse, lr_r2, lr_future_prices, y_test, y_pred, lr_future_prices_6m, lr_future_prices_1y = linear_regression_model(stock_data)
             print(f"{symbol}: Trained and evaluated linear regression model")
             print(f"{symbol}: Linear Regression MSE: {lr_mse}")
 
-            best_model = 'LR' if lr_mse < rf_mse else 'RF'
+            # Determine the best model based on the lowest MSE
+            mse_scores = {'LR': lr_mse, 'RF': rf_mse, 'NN': nn_mse}
+            best_model = min(mse_scores, key=mse_scores.get)
             print(f"{symbol}: Best model: {best_model}")
-            print()
 
             current_price = stock_data_yf.tail(1)['Close'].iloc[0]
             print(f"{symbol}: Current price: {current_price}")
             print()
 
-            action_1d = get_action(current_price, lr_future_prices[-1])
-            action_3p = get_action(current_price, lr_future_prices[-1], threshold=0.03)
-            action_5p = get_action(current_price, lr_future_prices[-1], threshold=0.05)
-            action_10p = get_action(current_price, lr_future_prices[-1], threshold=0.1)
-
+            
             # Predict tomorrow's close price
-            tomorrow_price = lr_future_prices[-2] if dt.datetime.now().hour >= 16 else lr_future_prices[-1]
+            tomorrow_price = lr_future_prices[-2] if best_model == 'LR' else (rf_future_prices[-2] if best_model == 'RF' else nn_future_prices[-2])
             print(f"{symbol}: Tomorrow's price: {tomorrow_price}")
             print()
             
-            future_prices_7d = lr_future_prices[-7]
-            future_prices_1m = lr_future_prices[-30]
+            future_prices_7d = lr_future_prices[-7] if best_model == 'LR' else (rf_future_prices[-7] if best_model == 'RF' else nn_future_prices[-7])
+            future_prices_1m = lr_future_prices[-30] if best_model == 'LR' else (rf_future_prices[-30] if best_model == 'RF' else nn_future_prices[-30])
 
             print(f"{symbol}: Added predictions to DataFrame")
             if predictions_df is not None:
@@ -344,37 +367,53 @@ if __name__ == '__main__':
                 predictions_df.loc[0, 'Tomorrow_Close_Price_Prediction_NN'] = nn_future_prices[-1]
                 predictions_df.loc[0, '7d_Close_Price_Prediction_NN'] = nn_future_prices[-7]
                 predictions_df.loc[0, '1m_Close_Price_Prediction_NN'] = nn_future_prices[-30]
+                # Update the predictions DataFrame with the best model's predictions
+                predictions_df.loc[0, 'Best_Model'] = best_model
+                predictions_df.loc[0, 'Tomorrow_Close_Price_Prediction_Best_Model'] = lr_future_prices[-2] if best_model == 'LR' else (rf_future_prices[-2] if best_model == 'RF' else nn_future_prices[-2])
+                predictions_df.loc[0, '7d_Close_Price_Prediction_Best_Model'] = lr_future_prices[-7] if best_model == 'LR' else (rf_future_prices[-7] if best_model == 'RF' else nn_future_prices[-7])
+                predictions_df.loc[0, '1m_Close_Price_Prediction_Best_Model'] = lr_future_prices[-30] if best_model == 'LR' else (rf_future_prices[-30] if best_model == 'RF' else nn_future_prices[-30])
+
+                predictions_df.loc[0, '6m_Close_Price_Prediction_Best_Model'] = lr_future_prices_6m[-1] if best_model == 'LR' else (rf_future_prices_6m[-1] if best_model == 'RF' else nn_future_prices_6m[-1])
+                predictions_df.loc[0, '1y_Close_Price_Prediction_Best_Model'] = lr_future_prices_1y[-1] if best_model == 'LR' else (rf_future_prices_1y[-1] if best_model == 'RF' else nn_future_prices_1y[-1])
+                
             
             # Get today's date and tomorrow's date
 
             today_date_date = stock_data.index[-1].strftime("%Y-%m-%d")
             tomorrow_date = (stock_data.index[-1] + pd.DateOffset(days=1)).strftime("%Y-%m-%d")
             
-            plotey.save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, 'Linear Regression and Random Forest', tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred)             
-            print(f"{symbol}: Saved Plot")
+            plotey.save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, 'Linear Regression and Random Forest', tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1y, nn_future_prices_6m, nn_future_prices_1y)
 
             # Create a new DataFrame for the stock's predictions
-            predictions_df = pd.DataFrame({'Symbol': [symbol],
+            predictions_df = pd.DataFrame({
+                                            'Symbol': [symbol],
                                             'LR_MSE': [lr_mse],
                                             'RF_MSE': [rf_mse],
                                             'NN_MSE': [nn_mse],
                                             'rf_r2': [rf_r2],
                                             'LR_r2': [lr_r2],
+                                            'Best_Model': [best_model],
                                             'Today': [today_date_date],
-                                            'Today_Close_Price':[current_price],
+                                            'Today_Close_Price': [current_price],
                                             'Tomorrow': [tomorrow_date],
-                                            'Tomorrow_Close_Price_Prediction': [lr_future_prices[-2] if best_model == 'LR' else rf_future_prices[-2]],
-                                            '7d_Close_Price_Prediction': [lr_future_prices[-7] if best_model == 'LR' else rf_future_prices[-7]],
-                                            '1m_Close_Price_Prediction': [lr_future_prices[-30] if best_model == 'LR' else rf_future_prices[-30]],
+                                            'Tomorrow_Close_Price_Prediction_Best_Model': [lr_future_prices[-2] if best_model == 'LR' else (rf_future_prices[-2] if best_model == 'RF' else nn_future_prices[-2])],
+                                            '7d_Close_Price_Prediction_Best_Model': [lr_future_prices[-7] if best_model == 'LR' else (rf_future_prices[-7] if best_model == 'RF' else nn_future_prices[-7])],
+                                            '1m_Close_Price_Prediction_Best_Model': [lr_future_prices[-30] if best_model == 'LR' else (rf_future_prices[-30] if best_model == 'RF' else nn_future_prices[-30])],
+                                            '6m_Close_Price_Prediction_Best_Model': [lr_future_prices_6m[-1] if best_model == 'LR' else (rf_future_prices_6m[-1] if best_model == 'RF' else nn_future_prices_6m[-1])],
+                                            '1y_Close_Price_Prediction_Best_Model': [lr_future_prices_1y[-1] if best_model == 'LR' else (rf_future_prices_1y[-1] if best_model == 'RF' else nn_future_prices_1y[-1])],
                                             'Tomorrow_Close_Price_Prediction_RF': [rf_future_prices[-1]],
                                             '7d_Close_Price_Prediction_RF': [rf_future_prices[-7]],
                                             '1m_Close_Price_Prediction_RF': [rf_future_prices[-30]],
+                                            '6m_Close_Price_Prediction_RF': [rf_future_prices_6m[-1]],
+                                            '1y_Close_Price_Prediction_RF': [rf_future_prices_1y[-1]],
                                             'Tomorrow_Close_Price_Prediction_NN': [nn_future_prices[-1]],
                                             '7d_Close_Price_Prediction_NN': [nn_future_prices[-7]],
                                             '1m_Close_Price_Prediction_NN': [nn_future_prices[-30]],
-
+                                            '6m_Close_Price_Prediction_NN': [nn_future_prices_6m[-1]],
+                                            '1y_Close_Price_Prediction_NN': [nn_future_prices_1y[-1]]
                                             
-                                            '1d_Action': [action_1d]})
+})
+
 
         except Exception as e:
             print(f"Error processing {symbol}: {e}")
