@@ -30,7 +30,7 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
     # Create a Scatter trace for RF 1yr predicted price
     if rf_future_prices_1yr is not None:
         rf_future_prices_1yr_trace = go.Scatter(
-            x=[stock_data.index[-1] + pd.DateOffset(days=365)],
+            x=pd.date_range(stock_data.index[-1] + pd.DateOffset(days=1), periods=365, freq='D'),
             y=[rf_future_prices_1yr[-1]],
             mode='markers',
             name='RF 1yr predicted price',
@@ -50,17 +50,32 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
     # Create a Scatter trace for NN 1yr predicted price
     if nn_future_prices_1yr is not None:
         nn_future_prices_1yr_trace = go.Scatter(
-            x=[stock_data.index[-1] + pd.DateOffset(days=365)],
+            x=pd.date_range(stock_data.index[-1] + pd.DateOffset(days=1), periods=365, freq='D'),
             y=[nn_future_prices_1yr[-1]],
             mode='markers',
+            
+           
             name='NN 1yr predicted price',
             text=['NN 1yr predicted price']
             
+        )
+
+                
+
+        # Add a line trace that connects historical data to future data for the 1-year price prediction
+        nn_future_prices_1yr_line_trace = go.Scatter(
+            x=[stock_data.index[-1], stock_data.index[-1] + pd.DateOffset(days=365)],
+            y=[stock_data["Close"].iloc[-1], nn_future_prices_1yr[-1]],
+            mode='markers',
+            name='NN 1yr predicted price'
+            
+
         )
     actual_prices_trace = go.Scatter(
         x=stock_data.index,
         y=stock_data["Close"],
         mode='lines',
+        line=dict(width=2),
         name='Actual prices'
     )
 
@@ -109,8 +124,11 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
     rf_predicted_prices_trace = go.Scatter(
         x=rf_predicted_prices_interpolated.index,
         y=rf_predicted_prices_interpolated['Price'],
-        mode='lines+markers',
+        mode='lines',
+        line=dict( width=2),
+
         name='Random Forest Predicted prices'
+        
     
     
     )
@@ -149,14 +167,17 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
     nn_predicted_prices_trace = go.Scatter(
         x=nn_predicted_prices_interpolated.index,
         y=nn_predicted_prices_interpolated['Price'],
-        mode='lines+markers',
+        mode='lines',
+        line=dict(width=2),
         name='Neural Network Predicted prices'
     )
 
     nn_tomorrow_predicted_trace = go.Scatter(
         x=[stock_data.index[-1] + pd.DateOffset(days=1)],
         y=[nn_future_prices[-2]],
-        mode='lines+markers',
+        mode='markers',
+    
+        
         name='NN Tomorrow predicted price',
         text=['NN Tomorrow predicted price']
     )
@@ -187,12 +208,12 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
 
     # Create a Figure object
     # Create a Figure object with the Random Forest model's predictions
-    fig = go.Figure(data=[actual_prices_trace, predicted_prices_trace, tomorrow_predicted_trace, future_prices_7d_trace, future_prices_1m_trace, rf_predicted_prices_trace, rf_tomorrow_predicted_trace, rf_future_prices_7d_trace, rf_future_prices_1m_trace, rf_future_prices_6m_trace, rf_future_prices_1yr_trace, nn_predicted_prices_trace, nn_tomorrow_predicted_trace, nn_future_prices_7d_trace, nn_future_prices_1m_trace, nn_future_prices_6m_trace, nn_future_prices_1yr_trace], layout=layout)
-
+    fig = go.Figure(data=[actual_prices_trace, predicted_prices_trace, tomorrow_predicted_trace, future_prices_7d_trace, future_prices_1m_trace, rf_predicted_prices_trace, rf_tomorrow_predicted_trace, rf_future_prices_7d_trace, rf_future_prices_1m_trace, rf_future_prices_6m_trace, rf_future_prices_1yr_trace, nn_predicted_prices_trace, nn_tomorrow_predicted_trace, nn_future_prices_7d_trace, nn_future_prices_1m_trace, nn_future_prices_6m_trace, nn_future_prices_1yr_trace, nn_future_prices_1yr_line_trace], layout=layout)
 
     # Save the figure as a static image
     pio.write_image(fig, f'Figures/{symbol}_{model_type}_fig.png')
     pyo.plot(fig, filename=f'Figures/{symbol}_{model_type}_fig.html', auto_open=False)
+    
 
 def generate_timestamped_filename(prefix, extension):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
