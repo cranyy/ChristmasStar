@@ -5,12 +5,58 @@ import os
 import pandas as pd
 import time
 
-def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred):
-    # rest of the code
+def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1yr, nn_future_prices_6m, nn_future_prices_1yr):
+    
 
     # Create a Scatter trace for actual prices
     if not os.path.exists("Figures"):
         os.makedirs("Figures")
+
+    rf_future_prices_6m_trace = None
+    rf_future_prices_1yr_trace = None
+    nn_future_prices_6m_trace = None
+    nn_future_prices_1yr_trace = None
+
+    # Create a Scatter trace for RF 6m predicted price
+    if rf_future_prices_6m is not None:
+        rf_future_prices_6m_trace = go.Scatter(
+            x=[stock_data.index[-1] + pd.DateOffset(days=180)],
+            y=[rf_future_prices_6m[-1]],
+            mode='markers',
+            name='RF 6m predicted price',
+            text=['RF 6m predicted price']
+        )
+
+    # Create a Scatter trace for RF 1yr predicted price
+    if rf_future_prices_1yr is not None:
+        rf_future_prices_1yr_trace = go.Scatter(
+            x=[stock_data.index[-1] + pd.DateOffset(days=365)],
+            y=[rf_future_prices_1yr[-1]],
+            mode='markers',
+            name='RF 1yr predicted price',
+            text=['RF 1yr predicted price']
+        )
+
+    # Create a Scatter trace for NN 6m predicted price
+    if nn_future_prices_6m is not None:
+        nn_future_prices_6m_trace = go.Scatter(
+            x=[stock_data.index[-1] + pd.DateOffset(days=180)],
+            y=[nn_future_prices_6m[-1]],
+            mode='markers',
+            name='NN 6m predicted price',
+            text=['NN 6m predicted price']
+        )
+
+    # Create a Scatter trace for NN 1yr predicted price
+    if nn_future_prices_1yr is not None:
+        nn_future_prices_1yr_trace = go.Scatter(
+            x=[stock_data.index[-1] + pd.DateOffset(days=365)],
+            y=[nn_future_prices_1yr[-1]],
+            mode='markers',
+            name='NN 1yr predicted price',
+            text=['NN 1yr predicted price']
+            
+        )
     actual_prices_trace = go.Scatter(
         x=stock_data.index,
         y=stock_data["Close"],
@@ -92,6 +138,7 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
         mode='markers',
         name='RF 30d predicted price',
         text=['RF 30d predicted price']
+  
 
         )
     # Create a DataFrame for the random forest predicted prices
@@ -128,6 +175,8 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
         mode='markers',
         name='NN 30d predicted price',
         text=['NN 30d predicted price']
+
+    
     )
     # Create a layout for the plot
     layout = go.Layout(
@@ -138,7 +187,8 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
 
     # Create a Figure object
     # Create a Figure object with the Random Forest model's predictions
-    fig = go.Figure(data=[actual_prices_trace, predicted_prices_trace, tomorrow_predicted_trace, future_prices_7d_trace, future_prices_1m_trace, rf_predicted_prices_trace, rf_tomorrow_predicted_trace, rf_future_prices_7d_trace, rf_future_prices_1m_trace, nn_predicted_prices_trace, nn_tomorrow_predicted_trace, nn_future_prices_7d_trace, nn_future_prices_1m_trace], layout=layout)
+    fig = go.Figure(data=[actual_prices_trace, predicted_prices_trace, tomorrow_predicted_trace, future_prices_7d_trace, future_prices_1m_trace, rf_predicted_prices_trace, rf_tomorrow_predicted_trace, rf_future_prices_7d_trace, rf_future_prices_1m_trace, rf_future_prices_6m_trace, rf_future_prices_1yr_trace, nn_predicted_prices_trace, nn_tomorrow_predicted_trace, nn_future_prices_7d_trace, nn_future_prices_1m_trace, nn_future_prices_6m_trace, nn_future_prices_1yr_trace], layout=layout)
+
 
     # Save the figure as a static image
     pio.write_image(fig, f'Figures/{symbol}_{model_type}_fig.png')
