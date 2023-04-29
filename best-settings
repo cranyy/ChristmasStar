@@ -120,16 +120,25 @@ def neural_network_model(stock_data, retrain=False):
     model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
     # Train the model
-    model.fit(X_train, y_train, epochs=500, batch_size=32, verbose=2)
+    model.fit(X_train, y_train, epochs=25, batch_size=32, verbose=2)
 
     # Evaluate the model
     y_pred = model.predict(X_test).flatten()
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
 
-    last_30_days = stock_data[X.columns].tail(30)
-    last_30_days_scaled = scaler.transform(last_30_days)
-    future_prices = model.predict(last_30_days_scaled).flatten()
+    last_365_days = stock_data[X.columns].tail(365)
+    last_365_days_scaled = scaler.transform(last_365_days)
+    future_prices_all_days = model.predict(last_365_days_scaled).flatten()
+
+    predictions_df = pd.DataFrame(index=range(1, 366), columns=['NN_1d_Close_Price_Prediction'])
+    for i in range(1, 366):
+        predictions_df.loc[i, 'NN_1d_Close_Price_Prediction'] = future_prices_all_days[-i]
+
+    print("Neural Network predictions for every single day in the 365-day window:")
+    for i in range(1, 366):
+        print(f"{i} day(s) ahead: {future_prices_all_days[-i]}")
+
     last_180_days = stock_data[X.columns].tail(180)
     last_180_days_scaled = scaler.transform(last_180_days)
     future_prices_6m = model.predict(last_180_days_scaled).flatten()
@@ -138,9 +147,15 @@ def neural_network_model(stock_data, retrain=False):
     last_365_days_scaled = scaler.transform(last_365_days)
     future_prices_1y = model.predict(last_365_days_scaled).flatten()
 
+    last_30_days = stock_data[X.columns].tail(30)
+    last_30_days_scaled = scaler.transform(last_30_days)
+    future_prices = model.predict(last_30_days_scaled).flatten()
+
     model.save(model_file)
 
-    return mse, r2, future_prices, y_test, y_pred, future_prices_6m, future_prices_1y
+    return mse, r2, future_prices, future_prices_all_days, y_test, y_pred, future_prices_6m, future_prices_1y
+
+
 
 def random_forest_model(stock_data, retrain=False):
     model_file = 'random_forest_model.pkl'
@@ -258,11 +273,14 @@ if __name__ == '__main__':
     results_df = pd.DataFrame(columns=['Symbol', 'LR_MSE', 'RF_MSE', 'NN_MSE', 'LR_r2', 'RF_r2', 'NN_r2', 'Today', 'Today_Close_Price', 'Tomorrow', 'Tomorrow_Close_Price_Prediction', '1d_Action', '1d_Action_3p', '1d_Action_5p', '1d_Action_10p', 'Tomorrow'])
 
     all_predictions_dfs = []
-    
+    predictions_df = pd.DataFrame(columns=[...])
+
     # Iterate through S&P 500 stocks and predict their prices
     for symbol in tqdm(sp500_list):
         print(f"Processing {symbol}...")
-        predictions_df = None
+        predictions_df = pd.DataFrame(columns=[...])
+
+        
         try:
             # Get the stock data from Yahoo Finance
             stock_data_yf = stoceky.get_stock_data(symbol, start_date, end_date)
@@ -283,10 +301,11 @@ if __name__ == '__main__':
             print(f"{symbol}: Added features to stock data")
 
             # Train and evaluate the neural network model
-            nn_mse, nn_r2, nn_future_prices, nn_y_test, nn_y_pred, nn_future_prices_6m, nn_future_prices_1y = neural_network_model(stock_data)
+            nn_mse, nn_r2, nn_future_prices, nn_future_prices_all_days, nn_y_test, nn_y_pred, nn_future_prices_6m, nn_future_prices_1y = neural_network_model(stock_data)
             print(f"{symbol}: Trained and evaluated neural network model")
             print(f"{symbol}: Neural Network MSE: {nn_mse}")
 
+            
             # Train and evaluate the random forest model
             rf_mse, rf_r2, rf_future_prices, rf_y_test, rf_y_pred, rf_future_prices_6m, rf_future_prices_1y = random_forest_model(stock_data)
             print(f"{symbol}: Trained and evaluated random forest model")
@@ -320,12 +339,12 @@ if __name__ == '__main__':
             if predictions_df is not None:
                 predictions_df.loc[0, 'RF_MSE'] = rf_mse
                 predictions_df.loc[0, 'RF_r2'] = rf_r2
-                predictions_df.loc[0, 'Tomorrow_Close_Price_Prediction_RF'] = rf_future_prices[-1]
+                predictions_df.loc[0, 'Tomorrow_Close_Price_Prediction_RF'] = rf_future_prices[-2]
                 predictions_df.loc[0, '7d_Close_Price_Prediction_RF'] = rf_future_prices[-7]
                 predictions_df.loc[0, '1m_Close_Price_Prediction_RF'] = rf_future_prices[-30]
                 predictions_df.loc[0, 'NN_MSE'] = nn_mse
                 predictions_df.loc[0, 'NN_r2'] = nn_r2
-                predictions_df.loc[0, 'Tomorrow_Close_Price_Prediction_NN'] = nn_future_prices[-1]
+                predictions_df.loc[0, 'Tomorrow_Close_Price_Prediction_NN'] = nn_future_prices[-2]
                 predictions_df.loc[0, '7d_Close_Price_Prediction_NN'] = nn_future_prices[-7]
                 predictions_df.loc[0, '1m_Close_Price_Prediction_NN'] = nn_future_prices[-30]
                 # Update the predictions DataFrame with the best model's predictions
@@ -343,7 +362,7 @@ if __name__ == '__main__':
             today_date_date = stock_data.index[-1].strftime("%Y-%m-%d")
             tomorrow_date = (stock_data.index[-1] + pd.DateOffset(days=1)).strftime("%Y-%m-%d")
             
-            plotey.save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, 'Linear Regression and Random Forest', tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1y, nn_future_prices_6m, nn_future_prices_1y)
+            plotey.save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, 'Linear Regression and Random Forest', tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1y, nn_future_prices_6m, nn_future_prices_1y, nn_future_prices_all_days)
 
             # Create a new DataFrame for the stock's predictions
             predictions_df = pd.DataFrame({
