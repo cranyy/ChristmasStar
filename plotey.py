@@ -28,7 +28,8 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
     nn_future_prices_all_days_trace = go.Scatter(
     x=pd.date_range(stock_data.index[-1] + pd.DateOffset(days=1), periods=365, freq='1D'),
     y=nn_future_prices_all_days[::-1],
-    mode='lines+markers',
+    mode='lines',
+    line = dict(width=2, color='black'),
     name='NN daily window predictions'
 )
 
@@ -212,14 +213,16 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
         name='NN 30d predicted price',
         text=['NN 30d predicted price']
 
-    
     )
-    # Create a layout for the plot
     layout = go.Layout(
-        title=f"Compare predicted prices to actual prices for {symbol} ({model_type})",
-        xaxis=dict(title='Date'),
-        yaxis=dict(title='Price')
-    )
+    title=f"Compare predicted prices to actual prices for {symbol} ({model_type})",
+    xaxis=dict(
+        title='Date',
+        range=['2021-01-01', '2024-06-30']  # Set the range of the x-axis to be from 2021 to mid-2024
+    ),
+    yaxis=dict(title='Price')
+)
+
     # Add print statements to check the values of the traces
     
 
