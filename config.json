@@ -1,0 +1,25 @@
+{
+  "start_date": "1900-01-01",
+  "end_date": "2023-05-26",
+  "num_symbols": 500,
+  "linear_regression": {
+    "model_file": "linear_regression_model.pkl"
+  },
+  "data": {
+    "window_size": 60,
+    "train_split_size": 0.8
+  },
+  "model": {
+    "input_size": 17,
+    "lstm_size": 64,
+    "num_lstm_layers": 2,
+    "dropout": 0.2
+  },
+  "training": {
+    "device": "cpu",
+    "batch_size": 64,
+    "num_epoch": 10,
+    "learning_rate": 0.001,
+    "scheduler_step_size": 10
+  }
+}
