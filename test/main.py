@@ -180,71 +180,7 @@ if __name__ == '__main__':
             current_price = stock_data_yf.tail(1)['Close'].iloc[0]
             print(f"{symbol}: Current price: {current_price}")
             print()
-           # Create a Figure object
-            fig = go.Figure()
 
-            # Add actual values trace to the figure
-            fig.add_trace(
-                go.Scatter(
-                    x=list(range(len(lstm_y_test))),
-                    y=lstm_y_test,
-                    mode='lines+markers',
-                    name='Actual',
-                    line=dict(color='blue', width=2)
-                )
-            )
-
-            # Add LSTM predicted values trace to the figure
-            fig.add_trace(
-                go.Scatter(
-                    x=list(range(len(lstm_y_pred))),
-                    y=lstm_y_pred,
-                    mode='lines+markers',
-                    name='Predicted',
-                    line=dict(color='red', width=2)
-                )
-            )
-
-            # Update layout of the figure
-            fig.update_layout(
-                title='Actual vs Predicted Close Prices',
-                xaxis=dict(
-                    title='Day',
-                    showline=True,
-                    showgrid=True,
-                    showticklabels=True,
-                    linecolor='rgb(204, 204, 204)',
-                    linewidth=2,
-                    ticks='outside',
-                    tickfont=dict(
-                        family='Arial',
-                        size=12,
-                        color='rgb(82, 82, 82)',
-                    ),
-                ),
-                yaxis=dict(
-                    title='Price',
-                    showline=True,
-                    showgrid=True,
-                    showticklabels=True,
-                    linecolor='rgb(204, 204, 204)',
-                    linewidth=2,
-                    ticks='outside',
-                    tickfont=dict(
-                        family='Arial',
-                        size=12,
-                        color='rgb(82, 82, 82)',
-                    ),
-                ),
-                autosize=False,
-                showlegend=True,
-                plot_bgcolor='white'
-            )
-
-            # Save the plot to an HTML file
-            fig.write_html(f'{symbol}_lstm_predictions.html')
-
-            print(f"Saved LSTM predictions plot to {symbol}_lstm_predictions.html")
             
             # Predict tomorrow's close price
             tomorrow_price = lr_future_prices[-2] if best_model == 'LR' else (rf_future_prices[-2] if best_model == 'RF' else nn_future_prices[-2])
@@ -336,6 +272,7 @@ if __name__ == '__main__':
                                             '1y_Close_Price_Prediction_NN': [nn_future_prices_1y[-1]]
                                             
                                     })
+                                            
 
 
 
