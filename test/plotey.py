@@ -12,7 +12,7 @@ import os
 import pandas as pd
 import time
 
-def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1yr, nn_future_prices_6m, nn_future_prices_1yr, nn_future_prices_all_days):
+def save_plot(stock_data, y_test, y_pred, rf_y_pred, lstm_y_pred, lstm_future_prices_all_days, symbol, model_type, tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1yr, nn_future_prices_6m, nn_future_prices_1yr, nn_future_prices_all_days):
     print(f"Inside save_plot function for {symbol}")
 
     # Create a Scatter trace for actual prices
@@ -23,7 +23,14 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
     rf_future_prices_1yr_trace = None
     nn_future_prices_6m_trace = None
     nn_future_prices_1yr_trace = None
-
+# Create a Scatter trace for 3-day window NN predictions
+    lstm_future_prices_all_days_trace = go.Scatter(
+    x=pd.date_range(stock_data.index[-1] + pd.DateOffset(days=1), periods=365, freq='1D'),
+    y=lstm_future_prices_all_days[::-1],
+    mode='lines',
+    line = dict(width=2, color='yellow'),
+    name='LSTM daily window predictions'
+)
     # Create a Scatter trace for 3-day window NN predictions
     nn_future_prices_all_days_trace = go.Scatter(
     x=pd.date_range(stock_data.index[-1] + pd.DateOffset(days=1), periods=365, freq='1D'),
@@ -228,7 +235,7 @@ def save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, model_type, tomorro
 
     # Create a Figure object
     # Create a Figure object with the Random Forest model's predictions
-    fig = go.Figure(data=[actual_prices_trace, predicted_prices_trace, tomorrow_predicted_trace, future_prices_7d_trace, future_prices_1m_trace, rf_predicted_prices_trace, rf_tomorrow_predicted_trace, rf_future_prices_7d_trace, rf_future_prices_1m_trace, rf_future_prices_6m_trace, rf_future_prices_1yr_trace, nn_predicted_prices_trace, nn_tomorrow_predicted_trace, nn_future_prices_7d_trace, nn_future_prices_1m_trace, nn_future_prices_6m_trace, nn_future_prices_1yr_trace, nn_future_prices_1yr_line_trace, nn_future_prices_all_days_trace], layout=layout)
+    fig = go.Figure(data=[actual_prices_trace, predicted_prices_trace, tomorrow_predicted_trace, future_prices_7d_trace, future_prices_1m_trace, rf_predicted_prices_trace, rf_tomorrow_predicted_trace, rf_future_prices_7d_trace, rf_future_prices_1m_trace, rf_future_prices_6m_trace, rf_future_prices_1yr_trace, nn_predicted_prices_trace, nn_tomorrow_predicted_trace, nn_future_prices_7d_trace, nn_future_prices_1m_trace, nn_future_prices_6m_trace, nn_future_prices_1yr_trace, nn_future_prices_1yr_line_trace, nn_future_prices_all_days_trace, lstm_future_prices_all_days_trace], layout=layout)
 
     # Save the figure as a static image
     pio.write_image(fig, f'Figures/{symbol}_{model_type}_fig.png')
