@@ -239,7 +239,7 @@ if __name__ == '__main__':
             today_date_date = stock_data.index[-1].strftime("%Y-%m-%d")
             tomorrow_date = (stock_data.index[-1] + pd.DateOffset(days=1)).strftime("%Y-%m-%d")
             
-            #plotey.save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, 'Linear Regression and Random Forest', tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1y, nn_future_prices_6m, nn_future_prices_1y, nn_future_prices_all_days)
+            #plotey.save_plot(stock_data, y_test, y_pred, rf_y_pred, symbol, 'Linear Regression and Random Forest', tomorrow_price, future_prices_7d, future_prices_1m, rf_future_prices, nn_future_prices, nn_y_test, nn_y_pred, rf_future_prices_6m, rf_future_prices_1y, nn_future_prices_6m, nn_future_prices_1y, nn_future_prices_all_days, lstm_future_prices_all_days)
 
             # Create a new DataFrame for the stock's predictions
             predictions_df = pd.DataFrame({
