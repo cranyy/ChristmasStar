@@ -38,10 +38,10 @@ def neural_network_model(stock_data, retrain=False):
 
     # Create the neural network model
     model = Sequential()
+    model.add(Dense(128, activation='relu', input_shape=(X_train.shape[1],)))
     model.add(Dense(64, activation='relu', input_shape=(X_train.shape[1],)))
     model.add(Dense(32, activation='relu'))
     model.add(Dense(1))
-
     model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
     # Train the model
